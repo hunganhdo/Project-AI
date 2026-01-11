@@ -3,30 +3,30 @@ from ultralytics import YOLO
 from PIL import Image
 
 # --- 1. CẤU HÌNH TRANG WEB ---
+# Tôi đã bỏ layout="wide" để banner tự động căn vừa đẹp hơn
 st.set_page_config(
     page_title="Ngon Luôn - AI Food Detector",
-    page_icon="🍲",
-    layout="wide"
+    page_icon="🍲"
 )
 
-# --- 2. CSS TÙY CHỈNH (Tạo Banner đẹp) ---
+# --- 2. CSS TÙY CHỈNH (Tạo Banner đẹp tràn viền) ---
 st.markdown("""
     <style>
-    /* Container chứa banner */
+    /* Container chính của banner - Tràn viền 100% */
     .banner-container {
         position: relative;
         width: 100%;
         overflow: hidden;
         border-radius: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
     
-    /* Ảnh nền banner */
+    /* Ảnh nền banner - Phóng to để bao phủ toàn bộ */
     .banner-img {
         width: 100%;
-        height: 250px;
-        object-fit: cover;
+        height: 400px; /* Tăng chiều cao lên 400px cho hoành tráng */
+        object-fit: cover; /* Quan trọng: Cắt ảnh để vừa khít khung */
         display: block;
     }
     
@@ -37,54 +37,45 @@ st.markdown("""
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.4);
+        /* Màu đen mờ dần từ trên xuống dưới */
+        background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         text-align: center;
         color: white;
+        padding: 20px;
     }
     
     .banner-title {
         font-size: 3.5rem;
         font-weight: 800;
-        margin: 0;
-        font-family: 'Helvetica', sans-serif;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
     }
     
     .banner-subtitle {
-        font-size: 1.2rem;
-        margin-top: 10px;
+        font-size: 1.3rem;
         font-weight: 300;
         font-style: italic;
+        opacity: 0.9;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (THANH BÊN TRÁI - ĐÃ SỬA THÀNH HOME) ---
+# --- 3. SIDEBAR (THANH BÊN TRÁI) ---
 with st.sidebar:
-    # Logo nhỏ (nếu có)
-    st.logo("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1200px-Python-logo-notext.svg.png", icon_image=None)
-    
-    # --- THAY ĐỔI Ở ĐÂY: Đổi "Bảng điều khiển" thành "Home" ---
     st.title("🏠 Home") 
-    
     st.markdown("---")
-    
-    # Upload file
     st.subheader("1. Input")
     uploaded_file = st.file_uploader("Kéo thả hoặc chọn ảnh", type=['jpg', 'jpeg', 'png'])
-    
     st.markdown("---")
-    
-    # Cấu hình Model
     st.subheader("2. Settings")
     conf_threshold = st.slider("Độ tin cậy (Confidence)", 0.0, 1.0, 0.25)
     st.caption("Điều chỉnh độ nhạy của AI.")
 
-# --- 4. GIAO DIỆN CHÍNH (BANNER) ---
+# --- 4. GIAO DIỆN CHÍNH (BANNER TRÀN VIỀN) ---
 
 # Banner hiển thị ngay đầu trang
 st.markdown("""
