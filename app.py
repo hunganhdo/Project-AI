@@ -1,211 +1,237 @@
+# ===============================
+# FOOD VN AI DETECTOR – PREMIUM VISUAL UI
+# Focus: BẮT MẮT – HIỆN ĐẠI – TRÌNH DIỄN ĐỒ ÁN
+# ===============================
+
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
-import base64
-import os
+import numpy as np
 import cv2
+import os
 import tempfile
 
-# --- 1. CẤU HÌNH TRANG WEB ---
+# ===============================
+# PAGE CONFIG
+# ===============================
 st.set_page_config(
-    page_title="Food VN - AI Detector",
-    page_icon="🍲",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="FoodDetector – AI Vision",
+    page_icon="🍜",
+    layout="wide"
 )
 
-# --- 2. CÁC HÀM CACHE & HỖ TRỢ ---
-@st.cache_data
-def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
-
+# ===============================
+# LOAD MODEL
+# ===============================
 @st.cache_resource
-def load_model(model_path):
-    try:
-        return YOLO(model_path)
-    except Exception:
-        return None
+def load_model():
+    path = os.path.join(os.path.dirname(__file__), "model", "best.pt")
+    return YOLO(path) if os.path.exists(path) else None
 
-# --- 3. CSS (TRANG ĐIỂM CHO WEB) ---
+model = load_model()
+
+# ===============================
+# PREMIUM CSS
+# ===============================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-    }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
-    .banner-container {
-        width: 100%;
-        margin-bottom: 20px;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-    }
-    .banner-img {
-        width: 100%;
-        display: block;
-    }
+html, body, [class*="css"] {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(180deg, #fff7f2, #ffffff);
+}
 
-    .image-card {
-        background-color: white;
-        padding: 15px;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        text-align: center;
-        margin-bottom: 20px;
-        border: 1px solid #f0f2f6;
-    }
-    
-    .card-title {
-        color: #333;
-        font-weight: 600;
-        margin-bottom: 10px;
-        font-size: 1.1rem;
-    }
+.block-container {
+    max-width: 1200px;
+    padding-top: 2rem;
+}
 
-    /* Nút bấm Gradient */
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF4B4B 0%, #FF9068 100%);
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 10px;
-        font-weight: 600;
-        width: 100%;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+/* NAVBAR */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 25px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #ff7043, #ff5722);
+    color: white;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 25px rgba(255,87,34,.35);
+}
 
-# --- 4. SIDEBAR ---
-with st.sidebar:
-    st.markdown("<h1 style='text-align: left; color: #FF4B4B;'>Food Việt Nam</h1>", unsafe_allow_html=True)
-    
-    page = st.radio("Menu", ["🏠 Home", "ℹ️ About"], index=0, label_visibility="collapsed")
-    st.markdown("---")
-    
-    # Biến lưu dữ liệu upload
-    source_img = None
-    source_vid = None
-    media_type = None
+.nav-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
 
-    if page == "🏠 Home":
-        st.subheader("📥 Dữ liệu đầu vào")
-        
-        # TẠO 2 TAB: ẢNH & VIDEO
-        tab1, tab2 = st.tabs(["🖼️ Ảnh", "🎥 Video"])
-        
-        with tab1:
-            source_img = st.file_uploader("Tải ảnh lên", type=['jpg', 'jpeg', 'png'], key="img_uploader")
-            if source_img: media_type = "image"
-                
-        with tab2:
-            source_vid = st.file_uploader("Tải video lên", type=['mp4', 'avi', 'mov'], key="vid_uploader")
-            if source_vid: media_type = "video"
+.nav-links span {
+    margin-left: 15px;
+    font-weight: 500;
+    opacity: .9;
+}
 
-# --- 5. LOGIC CHÍNH ---
+/* HERO */
+.hero {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 30px;
+    align-items: center;
+    margin-bottom: 35px;
+}
 
+.hero-text h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #ff5722;
+}
+
+.hero-text p {
+    font-size: 1.1rem;
+    color: #555;
+    margin-top: 10px;
+}
+
+.hero-card {
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,.15);
+}
+
+.hero-card img {
+    width: 100%;
+}
+
+/* CARDS */
+.card {
+    background: white;
+    border-radius: 22px;
+    padding: 25px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+    margin-bottom: 25px;
+}
+
+.card h3 {
+    margin-bottom: 15px;
+}
+
+/* BUTTON */
+.stButton > button {
+    background: linear-gradient(135deg, #ff7043, #ff5722);
+    color: white;
+    border-radius: 999px;
+    padding: 12px 36px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    box-shadow: 0 6px 20px rgba(255,87,34,.35);
+}
+
+/* BADGE */
+.badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #43a047, #66bb6a);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 999px;
+    margin: 6px;
+    font-size: .9rem;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ===============================
+# NAVBAR
+# ===============================
+page = st.radio("", ["🏠 Home", "ℹ️ About"], horizontal=True)
+
+st.markdown("""
+<div class="navbar">
+    <div class="nav-title">🍜 FoodDetector AI</div>
+    <div class="nav-links"><span>Computer Vision</span><span>YOLO</span><span>Vietnamese Food</span></div>
+</div>
+""", unsafe_allow_html=True)
+
+# ===============================
+# HOME
+# ===============================
 if page == "🏠 Home":
-    # 1. Hiện Banner
-    banner_file = 'welcome.png' 
-    if os.path.exists(banner_file):
-        bin_str = get_base64_of_bin_file(banner_file)
-        st.markdown(f'<div class="banner-container"><img src="data:image/png;base64,{bin_str}" class="banner-img"></div>', unsafe_allow_html=True)
-    
-    # 2. Load Model
-    model_path = 'model/best.pt'
-    model = load_model(model_path)
-    
-    if not model:
-        st.error(f"⚠️ LỖI: Không tìm thấy file model tại '{model_path}'. Hãy kiểm tra lại thư mục!")
-        st.stop()
 
-    # 3. Xử lý A - NẾU LÀ ẢNH
-    if media_type == "image" and source_img:
-        col1, col2 = st.columns([1, 1], gap="large") 
-        image = Image.open(source_img)
-
-        with col1:
-            st.markdown('<div class="image-card"><div class="card-title">📸 Ảnh gốc</div>', unsafe_allow_html=True)
-            st.image(image, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-            analyze_btn = st.button("🚀 Phân tích ngay")
-
-        with col2:
-            st.markdown('<div class="image-card"><div class="card-title">✨ Kết quả AI</div>', unsafe_allow_html=True)
-            if analyze_btn:
-                with st.spinner('Đang nhận diện...'):
-                    results = model(image, conf=0.25)
-                    res_plotted = results[0].plot()
-                    st.image(res_plotted, use_container_width=True)
-                    
-                    # Hiện tên món ăn
-                    detected = []
-                    for box in results[0].boxes:
-                        name = model.names[int(box.cls[0])]
-                        conf = float(box.conf[0])
-                        detected.append((name, conf))
-                    
-                    if detected:
-                        st.success(f"Tìm thấy {len(detected)} món!")
-                        html_tags = ""
-                        for name, conf in detected:
-                            html_tags += f'<span style="background-color: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 15px; margin: 5px; font-weight: bold; display: inline-block;">{name} ({conf:.0%})</span>'
-                        st.markdown(html_tags, unsafe_allow_html=True)
-                    else:
-                        st.warning("Không tìm thấy món nào.")
-            else:
-                st.info("👈 Bấm nút để xem kết quả")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    # 4. Xử lý B - NẾU LÀ VIDEO
-    elif media_type == "video" and source_vid:
-        st.markdown('<div class="image-card"><div class="card-title">🎥 Phân tích Video (Real-time)</div>', unsafe_allow_html=True)
-        
-        if st.button("▶️ Bắt đầu chạy Video"):
-            # Lưu video tạm thời
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
-            tfile.write(source_vid.read())
-            
-            vf = cv2.VideoCapture(tfile.name)
-            stframe = st.empty() # Khung hình trống để chiếu video
-            
-            while vf.isOpened():
-                ret, frame = vf.read()
-                if not ret: break
-                
-                # Resize video nếu quá to để chạy nhanh hơn
-                frame = cv2.resize(frame, (640, int(frame.shape[0]*640/frame.shape[1])))
-
-                # AI xử lý
-                results = model(frame, conf=0.25)
-                res_plotted = results[0].plot()
-                
-                # Đổi màu BGR -> RGB để hiển thị đúng
-                res_plotted = cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB)
-                stframe.image(res_plotted, caption='Đang chạy...', use_container_width=True)
-
-            vf.release()
-            st.success("Đã xong video!")
-        else:
-             st.info("Bấm nút trên để AI bắt đầu quét video.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    else:
-        st.info("👈 Hãy chọn Ảnh hoặc Video ở menu bên trái để bắt đầu.")
-
-elif page == "ℹ️ About":
-    st.title("ℹ️ Giới thiệu")
     st.markdown("""
-    <div class="image-card" style="text-align: left;">
-        <h3>🍜 Food Việt Nam Project</h3>
-        <p>Ứng dụng AI nhận diện món ăn Việt Nam.</p>
-        <ul>
-            <li><b>Công nghệ:</b> YOLOv10 & Streamlit</li>
-            <li><b>Tính năng:</b> Hỗ trợ cả Ảnh và Video</li>
-            <li><b>Tác giả:</b> Group 8</li>
-        </ul>
+    <div class="hero">
+        <div class="hero-text">
+            <h1>Vietnamese Food<br>Detection AI</h1>
+            <p>Upload image or video and let AI recognize Vietnamese dishes instantly.</p>
+        </div>
+        <div class="hero-card">
+            <img src="https://images.unsplash.com/photo-1604908177225-6c9b9e8c2e07">
+        </div>
     </div>
     """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1,1.2], gap="large")
+
+    # INPUT
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### 📥 Upload data")
+        mode = st.radio("Mode", ["Image", "Video"])
+        conf = st.slider("Confidence", 0.1, 1.0, 0.3)
+
+        img = None
+        vid = None
+
+        if mode == "Image":
+            img = st.file_uploader("Upload image", type=["jpg","png","jpeg"])
+            if img:
+                image = Image.open(img)
+                st.image(image, use_container_width=True)
+
+        else:
+            vid = st.file_uploader("Upload video", type=["mp4","avi"])
+            if vid:
+                st.video(vid)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # OUTPUT
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("### 🧠 AI Result")
+
+        if model is None:
+            st.error("Model not found")
+
+        elif img and st.button("🚀 Detect Image"):
+            res = model(np.array(image), conf=conf)
+            st.image(res[0].plot(), channels="BGR", use_container_width=True)
+            for b in res[0].boxes:
+                st.markdown(f'<span class="badge">{model.names[int(b.cls[0])]} ({float(b.conf[0]):.0%})</span>', unsafe_allow_html=True)
+
+        elif vid and st.button("▶️ Detect Video"):
+            tfile = tempfile.NamedTemporaryFile(delete=False)
+            tfile.write(vid.read())
+            cap = cv2.VideoCapture(tfile.name)
+            frame_box = st.empty()
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret: break
+                res = model(frame, conf=conf)
+                frame_box.image(cv2.cvtColor(res[0].plot(), cv2.COLOR_BGR2RGB), use_container_width=True)
+            cap.release()
+
+        else:
+            st.info("Upload data to start")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ===============================
+# ABOUT
+# ===============================
+else:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("## About")
+    st.write("Premium UI for Vietnamese Food Detection using YOLO.")
+    st.markdown('</div>', unsafe_allow_html=True)
